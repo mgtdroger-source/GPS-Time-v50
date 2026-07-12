@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Rally Field Tool v0.62</title>
+<title>Rally Field Tool v0.63</title>
 <style>
 :root{
   --bg:#f3f6fa;
@@ -477,15 +477,15 @@ button:disabled{
   .proof-point-meta{font-size:.74rem}
 }
 .proof-point.failed{border-color:#efaaa5;background:#fff5f4}
-.proof-dashboard-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.proof-dashboard-footer{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:10px}
 .proof-elapsed{font-family:"Courier New",monospace;font-size:.9rem;font-weight:900;color:var(--accent);white-space:nowrap}
-.proof-time-btn{position:relative;width:104px;min-width:104px;margin:0;padding:9px 12px;border-radius:11px;overflow:hidden;background:#dfe5eb;color:#6b7785;border:1px solid #c8d2dc;touch-action:none;user-select:none}
+.proof-time-btn{position:relative;width:140px;min-width:140px;margin:0;padding:9px 10px;border-radius:11px;overflow:hidden;background:#dfe5eb;color:#6b7785;border:1px solid #c8d2dc;touch-action:none;user-select:none}
 .proof-time-btn.available{background:var(--good);color:#fff;border-color:var(--good)}
 .proof-time-btn .proof-time-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(255,255,255,.32)}
 .proof-time-btn.holding .proof-time-fill{animation:proofTimeSweep .5s linear forwards}
 .proof-time-btn .proof-time-label{position:relative;z-index:1}
 @keyframes proofTimeSweep{from{width:0}to{width:100%}}
-.proof-time-line{display:flex;align-items:baseline;gap:14px;font-family:"Courier New",monospace;font-size:.78rem;color:var(--accent);font-weight:400;margin-top:4px;white-space:nowrap;letter-spacing:-.02em}
+.proof-time-line{display:flex;align-items:baseline;gap:14px;font-family:Arial,Helvetica,sans-serif;font-size:.78rem;color:var(--accent);font-weight:400;margin-top:4px;white-space:nowrap;letter-spacing:normal}
 .proof-time-line .proof-time-group{display:inline-block}
 .proof-time-line .proof-diff{font-weight:900;color:var(--ink)}
 
@@ -501,7 +501,7 @@ button:disabled{
 <div class="app">
 
   <div class="card">
-    <h1>Rally Field Tool v0.62</h1>
+    <h1>Rally Field Tool v0.63</h1>
     <div class="sub">Field capture shell for rally GPS waypoint/control information, trip-line testing and GPS trip use. This build presents Route Validation in the agreed route, dashboard, waypoint and fixed trip-control order.</div>
   </div>
 
@@ -1017,6 +1017,7 @@ button:disabled{
 // v0.54: Route Validation display tidy, L/P result prefix and end-of-list scroll breathing space.
 // v0.56: Radius-based armed starts compensate the missing centre-to-radius distance; armed-start confirmation uses a short beep.
 // v0.58: Route Validation dashboard locks during an active run; timing Diff and full-button hold sweep refined.
+// v0.63: Route Validation timing typography unified, Time target enlarged, untimed zero results suppressed, and Stop also ends the GPS trip.
 // v0.62: Route Validation timing feedback refined; button time appears immediately, timing groups spaced, and Stop opens Validation Complete.
 // v0.61: Time hold simplified, timing Diff emphasis matched, and proof Stop added to sticky controls.
 // v0.60: Route Validation dashboard/card spacing refined; Time may be re-recorded within the same gate.
@@ -1024,7 +1025,7 @@ button:disabled{
 // v0.57: Optional 500 ms hold Time button added for phone-timer comparison at gated waypoints.
 // v0.53: Help wording completed and sticky start controls no longer cover Stop and Review.
 // v0.45: Route Validation presentation tightened to keep Active Validation and waypoint results visible together.
-const APP_VERSION="0.62";
+const APP_VERSION="0.63";
 const STORE_KEY="rallyFieldToolData";
 const PROOF_STORE_KEY="rallyFieldToolProofRoute_v1";
 const LEGACY_STORE_KEYS=[
@@ -4049,6 +4050,7 @@ function scrollCurrentProofPointIntoView(){
 
 function stopProofSession(auto=false){
   if(!plannedRoute || proofSession.status==="review") return;
+  if(["running","paused"].includes(trip.state)) stopTrip();
   proofSession.status="review";
   proofSession.stoppedAt=Date.now();
   saveProofState();
@@ -4111,11 +4113,11 @@ function renderProofRoute(){
       btn.innerHTML='<div class="proof-point-heading"><span class="proof-point-label">'+escapeHtml(p.label)+'</span>'+(note?' <span class="proof-point-note">· '+note+'</span>':'')+'</div>'+'<div class="proof-point-meta" style="color:var(--bad);font-weight:900">'+escapeHtml(rec.method||"FAILED TO DETECT")+' · FAILED '+proofQualityBadge("B")+'</div>';
     }else if(rec){
       const capturePrefix=proofCapturePrefix(rec);
-      const timingLine=Number.isFinite(Number(rec.buttonElapsedMs))&&Number.isFinite(Number(rec.autoElapsedMs))?'<div class="proof-time-line"><span class="proof-time-group">Auto '+formatProofElapsed(rec.autoElapsedMs)+'</span><span class="proof-time-group">Button '+formatProofElapsed(rec.buttonElapsedMs)+'</span><span class="proof-time-group proof-diff">Diff '+formatProofTimeDiff(rec.timeDifferenceMs)+'</span></div>':'';
+      const timingLine=Number.isFinite(rec.buttonElapsedMs)&&Number.isFinite(rec.autoElapsedMs)?'<div class="proof-time-line"><span class="proof-time-group">Auto '+formatProofElapsed(rec.autoElapsedMs)+'</span><span class="proof-time-group">Button '+formatProofElapsed(rec.buttonElapsedMs)+'</span><span class="proof-time-group proof-diff">Diff '+formatProofTimeDiff(rec.timeDifferenceMs)+'</span></div>':'';
       btn.innerHTML='<div class="proof-point-heading"><span class="proof-point-label">'+escapeHtml(p.label)+'</span>'+(note?' <span class="proof-point-note">· '+note+'</span>':'')+'</div>'+'<div class="proof-point-meta">'+(capturePrefix?capturePrefix+' · ':'')+'Map '+Number(rec.mapDistanceKm).toFixed(3)+' km · GPS '+Number(rec.gpsDistanceKm).toFixed(3)+' km · <span class="proof-diff">Diff '+formatProofDiff(rec.differenceKm)+' km</span>'+proofQualityBadge(rec.quality)+'</div>'+timingLine;
     }else{
       const stateText=index===proofSession.nextIndex?'Current':'Pending';
-      const pendingButton=proofSession.buttonTimes&&Number.isFinite(Number(proofSession.buttonTimes[index]))?'<div class="proof-time-line"><span class="proof-time-group">Button '+formatProofElapsed(proofSession.buttonTimes[index])+'</span></div>':'';
+      const pendingButton=proofSession.buttonTimes&&Number.isFinite(proofSession.buttonTimes[index])?'<div class="proof-time-line"><span class="proof-time-group">Button '+formatProofElapsed(proofSession.buttonTimes[index])+'</span></div>':'';
       btn.innerHTML='<div class="proof-point-heading"><span class="proof-point-label">'+escapeHtml(p.label)+'</span>'+(note?' <span class="proof-point-note">· '+note+'</span>':'')+'</div>'+'<div class="proof-point-meta">'+(p.line?'Trip line':'Radius 30 m')+' · '+stateText+'</div>'+pendingButton;
     }
     btn.addEventListener("click",()=>startProofAt(index));
